@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:../../../../../COVIDTracker/COVIDTracker.xcodeproj">
+      location = "group:../../../../../ios_templates/COVIDTracker/COVIDTracker.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:../../../..">

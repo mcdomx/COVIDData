@@ -265,57 +265,6 @@ public func splitEntry(entry: [String:String], scope: Scope) throws -> ([String:
 	return (entry.filter({uidAttrs.contains($0.key)}), entry.filter({!uidAttrs.contains($0.key)}))
 }
 
-//func getGlobalUID(uidEntry: [String:String], context moc: NSManagedObjectContext) -> NSManagedObject {
-//	// will create new record if one doesn't already exist
-//	var uidRecord: NSManagedObject?
-//	do {
-//		let req = NSFetchRequest<Global_UID>(entityName: "Global_UID")
-//		req.predicate = NSPredicate(format: "(country_region = %@) AND (province_state = %@)", uidEntry["country_region"]!, uidEntry["province_state"]!)
-//		let r = try moc.fetch(req)
-//		if r.count > 0 {
-//			uidRecord = r[0]
-//		} else {
-//			let newUIDEntry = try! castUIDEntry(entry: uidEntry, scope: .global)
-//			uidRecord = loadUIDEntry(entityName: "Global_UID",
-//									 entry: newUIDEntry,
-//									 context: moc)
-//		}
-//	} catch {
-//		print("Something bad happened when setting the Global UID record")
-//		print(error)
-//	}
-//	
-//	return uidRecord!
-//	
-//}
-
-//func getUSUID(uidEntry: [String:String], context moc: NSManagedObjectContext) -> NSManagedObject {
-//	// will create new record if one doesn't already exist
-//	var uidRecord: NSManagedObject?
-//
-//	do {
-//		let req = NSFetchRequest<US_UID>(entityName: "US_UID")
-//		req.predicate = NSPredicate(format: "(country_region = %@) AND (province_state = %@) AND (admin2 = %@)", uidEntry["country_region"]!, uidEntry["province_state"]!, uidEntry["admin2"]!)
-//		let r = try moc.fetch(req)
-//		if r.count > 0 {
-//			uidRecord = r[0]
-//		} else {
-//			let newUIDEntry = try! castUIDEntry(entry: uidEntry, scope: .us)
-//			uidRecord = loadUIDEntry(entityName: "US_UID",
-//									 entry: newUIDEntry,
-//									 context: moc)
-//		}
-//	} catch {
-//		print("Something bad happened when setting the US UID record")
-//		print(error)
-//	}
-//
-//	return uidRecord!
-//}
-
-
-
-
 public func loadUIDEntry(entry: [String:String], scope s: Scope, context moc: NSManagedObjectContext) -> UID_Abstract {
 	// Return existing UID record or create a new one if it doesn't already exist
 	
@@ -330,37 +279,6 @@ public func loadUIDEntry(entry: [String:String], scope s: Scope, context moc: NS
 		return record
 	}
 }
-
-//func getGlobalSTATSEntry(date: Date, uid: Global_UID, context moc: NSManagedObjectContext) -> Global_STATS {
-//	// returns existing entry for a date or creates a new one
-//
-//	guard let statsRecord = Global_STATS.getStats(forDate: date, uid: uid, context: moc) else {
-//		let entity = persistentContainer.managedObjectModel.entitiesByName["Global_STATS"]
-//		return NSManagedObject(entity: entity!, insertInto: moc) as! Global_STATS
-//	}
-//
-//	return statsRecord
-//}
-
-
-//func loadGlobalSTATS(statsEntry: [String:String], dataType: DataType, uidRecord: Global_UID, context moc: NSManagedObjectContext) {
-////	let req = NSFetchRequest<Global_UID>(entityName: "Global_UID")
-////	req.predicate = NSPredicate(format: "(country_region = %@) AND (province_state = %@)", uidEntry["country_region"]!, uidEntry["province_state"]!)
-////	let uid = try! moc.fetch(req)[0]
-//
-//	let newSTATSEntry = try! castSTATSEntry(entry: statsEntry,
-//											dataType: dataType)
-//	
-////	let entity = persistentContainer.managedObjectModel.entitiesByName["Global_STATS"]
-//
-//	for entry in newSTATSEntry {
-////		let newEntry: Global_STATS =  NSManagedObject(entity: entity!, insertInto: moc) as! Global_STATS
-//		let newEntry = getGlobalSTATSEntry(date: entry["date"] as! Date, uid: uidRecord, context: moc)
-//		newEntry.setValuesForKeys(entry)
-//		uidRecord.addToStats(newEntry)
-//	}
-//
-//}
 
 func loadDataEntry(dataEntry: [String:String], dataType: DataType, uidRecord: UID_Abstract, context moc: NSManagedObjectContext) {
 //	let req = NSFetchRequest<Global_UID>(entityName: "Global_UID")
@@ -396,39 +314,6 @@ func loadDataEntry(dataEntry: [String:String], dataType: DataType, uidRecord: UI
 	try! moc.save()
 
 }
-
-
-//func getUSSTATSEntry(date: Date, uid: US_UID, context moc: NSManagedObjectContext) -> US_STATS {
-//	// returns existing entry for a date or creates a new one
-//
-////	let d = AttributeType.getDate(from: date)
-//
-//	guard let statsRecord = US_STATS.getStats(forDate: date, uid: uid, context: moc) else {
-//		let entity = persistentContainer.managedObjectModel.entitiesByName["Global_STATS"]
-//		return NSManagedObject(entity: entity!, insertInto: moc) as! US_STATS
-//	}
-//
-//	return statsRecord
-//}
-
-//func loadUSSSTATS(statsEntry: [String:String], dataType: DataType, uidRecord: US_UID, context moc: NSManagedObjectContext) {
-////	let req = NSFetchRequest<US_UID>(entityName: "US_UID")
-////	req.predicate = NSPredicate(format: "(country_region = %@) AND (province_state = %@) AND (admin2 = %@)", uidEntry["country_region"]!, uidEntry["province_state"]!, uidEntry["admin2"]!)
-////	let uid = try! moc.fetch(req)[0]
-//
-//	let newSTATSEntry = try! castSTATSEntry(entry: statsEntry,
-//											dataType: dataType)
-//
-////	let entity = persistentContainer.managedObjectModel.entitiesByName["US_STATS"]
-//
-//	for entry in newSTATSEntry {
-//		// see if there is an entry for the date already; create one if there is not one
-////		let newEntry: US_STATS =  NSManagedObject(entity: entity!, insertInto: moc) as! US_STATS
-//		let newEntry = getUSSTATSEntry(date: entry["date"] as! Date, uid: uidRecord, context: moc)
-//		newEntry.setValuesForKeys(entry)
-//		uidRecord.addToStats(newEntry)
-//	}
-//}
 
 func loadCSVLine(line: [String:String], scope s:Scope, dataType d:DataType, context moc: NSManagedObjectContext) throws {
 	let (uidEntry, dataEntry) = try! splitEntry(entry: line, scope: s)
