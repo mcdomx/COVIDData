@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="17511" systemVersion="20B29" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="Confirmed_Abstract" representedClassName="Confirmed_Abstract" isAbstract="YES" parentEntity="Values_Abstract" syncable="YES">
+        <relationship name="uid" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="UID_Abstract" inverseName="confirmed" inverseEntity="UID_Abstract"/>
+    </entity>
+    <entity name="Deaths_Abstract" representedClassName="Deaths_Abstract" isAbstract="YES" parentEntity="Values_Abstract" syncable="YES">
+        <relationship name="uid" maxCount="1" deletionRule="Nullify" destinationEntity="UID_Abstract" inverseName="deaths" inverseEntity="UID_Abstract"/>
+    </entity>
+    <entity name="Global_Confirmed" representedClassName="Global_Confirmed" parentEntity="Confirmed_Abstract" syncable="YES"/>
+    <entity name="Global_Deaths" representedClassName="Global_Deaths" parentEntity="Deaths_Abstract" syncable="YES"/>
+    <entity name="Global_STATS" representedClassName="Global_STATS" syncable="YES">
+        <attribute name="confirmed" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="deaths" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="uid" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Global_UID_OLD" inverseName="stats" inverseEntity="Global_UID_OLD"/>
+    </entity>
+    <entity name="Global_UID" representedClassName="Global_UID" parentEntity="UID_Abstract" syncable="YES"/>
+    <entity name="Global_UID_OLD" representedClassName="Global_UID_OLD" syncable="YES">
+        <attribute name="country_region" attributeType="String"/>
+        <attribute name="lat" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="long_" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="province_state" optional="YES" attributeType="String" defaultValueString=""/>
+        <relationship name="stats" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Global_STATS" inverseName="uid" inverseEntity="Global_STATS"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="country_region"/>
+                <constraint value="province_state"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+    <entity name="UID_Abstract" representedClassName="UID_Abstract" isAbstract="YES" syncable="YES">
+        <attribute name="admin2" optional="YES" attributeType="String" defaultValueString=""/>
+        <attribute name="country_region" attributeType="String" defaultValueString="US"/>
+        <attribute name="lat" attributeType="Float" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="long_" attributeType="Float" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="province_state" attributeType="String"/>
+        <relationship name="confirmed" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Confirmed_Abstract" inverseName="uid" inverseEntity="Confirmed_Abstract"/>
+        <relationship name="deaths" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Deaths_Abstract" inverseName="uid" inverseEntity="Deaths_Abstract"/>
+    </entity>
+    <entity name="US_Confirmed" representedClassName="US_Confirmed" parentEntity="Confirmed_Abstract" syncable="YES"/>
+    <entity name="US_Deaths" representedClassName="US_Deaths" parentEntity="Deaths_Abstract" syncable="YES"/>
+    <entity name="US_STATS" representedClassName="US_STATS" syncable="YES">
+        <attribute name="confirmed" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="deaths" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="uid" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="US_UID_OLD" inverseName="stats" inverseEntity="US_UID_OLD"/>
+    </entity>
+    <entity name="US_UID" representedClassName="US_UID" parentEntity="UID_Abstract" syncable="YES">
+        <attribute name="code3" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="combined_key" optional="YES" attributeType="String"/>
+        <attribute name="fips" optional="YES" attributeType="String"/>
+        <attribute name="iso2" optional="YES" attributeType="String"/>
+        <attribute name="iso3" optional="YES" attributeType="String"/>
+        <attribute name="population" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="uid" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="US_UID_OLD" representedClassName="US_UID_OLD" syncable="YES">
+        <attribute name="admin2" attributeType="String"/>
+        <attribute name="code3" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="combined_key" attributeType="String"/>
+        <attribute name="country_region" attributeType="String" defaultValueString="US"/>
+        <attribute name="fips" attributeType="String"/>
+        <attribute name="iso2" attributeType="String"/>
+        <attribute name="iso3" attributeType="String"/>
+        <attribute name="lat" attributeType="Float" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="long_" attributeType="Float" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="population" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="province_state" attributeType="String"/>
+        <attribute name="uid" attributeType="String"/>
+        <relationship name="stats" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="US_STATS" inverseName="uid" inverseEntity="US_STATS"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="uid"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+    <entity name="Values_Abstract" representedClassName="Values_Abstract" isAbstract="YES" syncable="YES">
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="value" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+    </entity>
+    <elements>
+        <element name="Confirmed_Abstract" positionX="322.540283203125" positionY="-32.69955444335938" width="128" height="58"/>
+        <element name="Deaths_Abstract" positionX="-38.3699951171875" positionY="-42.95584106445312" width="128" height="58"/>
+        <element name="Global_Confirmed" positionX="496.9049682617188" positionY="19.915283203125" width="128" height="29"/>
+        <element name="Global_Deaths" positionX="-194.409423828125" positionY="29.01840209960937" width="128" height="29"/>
+        <element name="Global_STATS" positionX="-247.8175048828125" positionY="-206.2373962402343" width="128" height="89"/>
+        <element name="Global_UID" positionX="-0.1495361328125" positionY="-383.948486328125" width="128" height="43"/>
+        <element name="Global_UID_OLD" positionX="-413.0052490234375" positionY="-198.4847869873047" width="128" height="118"/>
+        <element name="UID_Abstract" positionX="129.695068359375" positionY="-316.0776824951172" width="128" height="134"/>
+        <element name="US_Confirmed" positionX="506.1092529296875" positionY="-56.45248413085938" width="128" height="29"/>
+        <element name="US_Deaths" positionX="-218.4512939453125" positionY="-27.15728759765625" width="128" height="29"/>
+        <element name="US_STATS" positionX="-256.7122802734375" positionY="-337.8797912597657" width="128" height="89"/>
+        <element name="US_UID" positionX="-216" positionY="-297" width="128" height="134"/>
+        <element name="US_UID_OLD" positionX="-445.0348510742188" positionY="-473.5061187744141" width="128" height="238"/>
+        <element name="Values_Abstract" positionX="140.2449951171875" positionY="67.83581542968756" width="128" height="73"/>
+    </elements>
+</model>
