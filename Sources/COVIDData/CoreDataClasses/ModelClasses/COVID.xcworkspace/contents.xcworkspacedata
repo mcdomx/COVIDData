@@ -4,7 +4,4 @@
    <FileRef
       location = "group:../../../../../ios_templates/COVIDTracker/COVIDTracker.xcodeproj">
    </FileRef>
-   <FileRef
-      location = "group:../../../..">
-   </FileRef>
 </Workspace>

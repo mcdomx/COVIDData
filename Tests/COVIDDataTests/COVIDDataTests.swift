@@ -1,5 +1,6 @@
 import XCTest
 import SwiftUI
+import CoreData
 @testable import COVIDData
 
 final class COVIDDataTests: XCTestCase {
@@ -301,57 +302,57 @@ final class COVIDDataTests: XCTestCase {
 
 		XCTAssertEqual(headerMap.map({$0.value}).joined(separator: ","), newHeader)
 	}
-
-	func testLoadGlobalData() {
-		let moc = persistentContainer.viewContext
-		clearEntity(entityName: "Global_Deaths", context: moc)
-		clearEntity(entityName: "Global_Confirmed", context: moc)
-		clearEntity(entityName: "Global_UID", context: moc)
-		
-		loadData(scope: .global, dataType: .confirmed, context: moc)
-		loadData(scope: .global, dataType: .deaths, context: moc)
-
-		let req1 = NSFetchRequest<Global_UID>(entityName: "Global_UID")
-		let uidRecords = try! moc.fetch(req1)
-		print("UID Records Loaded: \(uidRecords.count)")
-		XCTAssertTrue(uidRecords.count>1)
-
-		let req2 = NSFetchRequest<Global_Confirmed>(entityName: "Global_Confirmed")
-		let confRecords = try! moc.fetch(req2)
-		print("Confrimed Data Records Loaded: \(confRecords.count)")
-		XCTAssertTrue(confRecords.count>1)
-		
-		let req3 = NSFetchRequest<Global_Deaths>(entityName: "Global_Deaths")
-		let deathRecords = try! moc.fetch(req3)
-		print("Deaths Data Records Loaded: \(deathRecords.count)")
-		XCTAssertTrue(deathRecords.count>1)
-		
-	}
+//
+//	func testLoadGlobalData() {
+//		let moc = persistentContainer.viewContext
+//		clearEntity(entityName: "Global_Deaths", context: moc)
+//		clearEntity(entityName: "Global_Confirmed", context: moc)
+//		clearEntity(entityName: "Global_UID", context: moc)
+//
+//		loadData(scope: .global, dataType: .confirmed)
+//		loadData(scope: .global, dataType: .deaths)
+//
+//		let req1 = NSFetchRequest<Global_UID>(entityName: "Global_UID")
+//		let uidRecords = try! moc.fetch(req1)
+//		print("UID Records Loaded: \(uidRecords.count)")
+//		XCTAssertTrue(uidRecords.count>1)
+//
+//		let req2 = NSFetchRequest<Global_Confirmed>(entityName: "Global_Confirmed")
+//		let confRecords = try! moc.fetch(req2)
+//		print("Confrimed Data Records Loaded: \(confRecords.count)")
+//		XCTAssertTrue(confRecords.count>1)
+//
+//		let req3 = NSFetchRequest<Global_Deaths>(entityName: "Global_Deaths")
+//		let deathRecords = try! moc.fetch(req3)
+//		print("Deaths Data Records Loaded: \(deathRecords.count)")
+//		XCTAssertTrue(deathRecords.count>1)
+//
+//	}
 	
-	func testLoadUSData() {
-		let moc = persistentContainer.viewContext
-		clearEntity(entityName: "US_Deaths", context: moc)
-		clearEntity(entityName: "US_Confirmed", context: moc)
-		clearEntity(entityName: "US_UID", context: moc)
-		
-		loadData(scope: .us, dataType: .confirmed, context: moc)
-		loadData(scope: .us, dataType: .deaths, context: moc)
-		
-		let req1 = NSFetchRequest<US_UID>(entityName: "US_UID")
-		let uidRecords = try! moc.fetch(req1)
-		print("UID Records Loaded: \(uidRecords.count)")
-		XCTAssertTrue(uidRecords.count>1)
-		
-		let req2 = NSFetchRequest<US_Confirmed>(entityName: "US_Confirmed")
-		let confRecords = try! moc.fetch(req2)
-		print("Confrimed Data Records Loaded: \(confRecords.count)")
-		XCTAssertTrue(confRecords.count>1)
-		
-		let req3 = NSFetchRequest<US_Deaths>(entityName: "US_Deaths")
-		let deathRecords = try! moc.fetch(req3)
-		print("Deaths Data Records Loaded: \(deathRecords.count)")
-		XCTAssertTrue(deathRecords.count>1)
-	}
+//	func testLoadUSData() {
+//		let moc = persistentContainer.viewContext
+//		clearEntity(entityName: "US_Deaths", context: moc)
+//		clearEntity(entityName: "US_Confirmed", context: moc)
+//		clearEntity(entityName: "US_UID", context: moc)
+//
+//		loadData(scope: .us, dataType: .confirmed)
+//		loadData(scope: .us, dataType: .deaths)
+//
+//		let req1 = NSFetchRequest<US_UID>(entityName: "US_UID")
+//		let uidRecords = try! moc.fetch(req1)
+//		print("UID Records Loaded: \(uidRecords.count)")
+//		XCTAssertTrue(uidRecords.count>1)
+//
+//		let req2 = NSFetchRequest<US_Confirmed>(entityName: "US_Confirmed")
+//		let confRecords = try! moc.fetch(req2)
+//		print("Confrimed Data Records Loaded: \(confRecords.count)")
+//		XCTAssertTrue(confRecords.count>1)
+//
+//		let req3 = NSFetchRequest<US_Deaths>(entityName: "US_Deaths")
+//		let deathRecords = try! moc.fetch(req3)
+//		print("Deaths Data Records Loaded: \(deathRecords.count)")
+//		XCTAssertTrue(deathRecords.count>1)
+//	}
 	
 
 	func testFetchAllGlobal() {
@@ -449,6 +450,33 @@ final class COVIDDataTests: XCTestCase {
 			print(output.joined(separator: ":"))
 
 		}
+	}
+	
+	func testfetchScopeLatestData() {
+		
+		for s in Scope.allCases {
+			for d in DataType.allCases {
+				let rv = fetchLatestData(scope: s, dataType: d)
+				XCTAssertNotNil(rv)
+				if rv != nil {
+					print("\(s):\(d) = \(rv!)")
+				} else {
+					print("\(s):\(d) = FAILED")
+				}
+			}
+		}
+	}
+	
+	func testFetchScopeData() {
+		
+		let covidData = COVIDData(scope: .us, dataType: .confirmed)
+		let (areas, dates, values) = covidData.data(frequency: .daily, levelOfDetail: .county, dateRange: .latest, filter: "US:Iowa:Scott")!
+		
+		for (i, a) in areas.enumerated() {
+			print(a, dates[i], values[i])
+		}
+		
+		
 	}
 	
 	

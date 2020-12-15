@@ -14,7 +14,7 @@ public enum Scope: String {
 		let levels: [String]
 		if level == nil { return rv }
 		// preserve the prefix
-		let prefix = level!.components(separatedBy: ".").dropLast().joined(separator: ".")
+//		let prefix = level!.components(separatedBy: ".").dropLast().joined(separator: ".")
 		
 		switch self {
 			case .global:
@@ -24,7 +24,8 @@ public enum Scope: String {
 		}
 		
 		for l in levels {
-			rv.append(prefix+"."+l)
+//			rv.append(prefix+"."+l)
+			rv.append(l)
 			if level!.hasSuffix(l) { break }
 		}
 		return rv
@@ -147,41 +148,226 @@ public class COVIDData {
 	
 	var scope: Scope
 	var dataType: DataType
+	var dataDate: Date? {
+		let moc = persistentContainer.viewContext
+		let req = NSFetchRequest<Values_Abstract>(entityName: "\(scope.proper())_\(dataType.proper())")
+		req.predicate = NSPredicate(format: "date == date.@max")
+		req.fetchLimit = 1
+		req.propertiesToFetch = ["date"]
+		guard let rv = try? moc.fetch(req), rv.count > 0 else { return nil }
+		return rv[0].date
+	}
+	var latestData: Int32? {
+		// create a fetch request with the selected date
+		let req = NSFetchRequest<NSFetchRequestResult>(entityName: "\(scope.proper())_\(dataType.proper())")
+		guard let date = dataDate else {
+			return nil
+		}
+		req.predicate = NSPredicate(format: "date = %@", date as CVarArg)
+		req.returnsObjectsAsFaults = false
+		req.resultType = .dictionaryResultType
+		
+		// Define the groupby summarization function
+		let keyPathExp = NSExpression(forKeyPath: "value")
+		// supports: sum, count, min, max, and average plus other basic statistical functions
+		let expression = NSExpression(forFunction: "sum:", arguments: [keyPathExp])
+		let sumDesc = NSExpressionDescription()
+		sumDesc.expression = expression
+		sumDesc.name = "sum"
+		sumDesc.expressionResultType = .integer32AttributeType
+		
+		req.propertiesToFetch = [sumDesc]
+		
+		guard let results = try? persistentContainer.viewContext.fetch(req), results.count > 0 else {
+			return nil
+		}
+		
+		return (results[0] as? [String:Int32])?["sum"]
+	}
 	var text: String
 	var fileURL: URL = URL(fileURLWithPath: "")
 	var url: URL {
 		get { return  DataURL(scope, dataType).URL }
 	}
 	
+	public enum Frequency {
+		case daily
+		case cumulative
+	}
+	
+	public enum LevelOfDetail: String {
+		case country = "country_region"
+		case state = "province_state"
+		case county = "admin2"
+	}
+	
+	public enum DateRange {
+		case latest
+		case all
+	}
+	
 	public init(scope: Scope, dataType: DataType) {
-		// preferred initialization approach
+		// If data does not exist, it will be loaded
 		self.scope = scope
 		self.dataType = dataType
 		self.text = "Scope: \(self.scope) DataType: \(self.dataType)"
-		downloadFile()
+		
+		// load data if there is none
+		if dataDate == nil {
+			loadData()
+		}
+			
 	}
 	
-	public func getCSV() -> [[String:String]] {
+	public func data(frequency f: Frequency, levelOfDetail l: LevelOfDetail, dateRange d: DateRange, filter: String? = nil) -> ([String], [Date],[Int32])? {
+				
+		let req = NSFetchRequest<NSFetchRequestResult>(entityName: "\(scope.proper())_\(dataType.proper())")
+		req.returnsObjectsAsFaults = false
 		
+		let levels = scope.summarizationLevels(level: l.rawValue).map({ "uid.\($0)"})
+		levels.forEach({ level in
+			req.sortDescriptors?.append(NSSortDescriptor(key: level, ascending: true))
+		})
+		
+		// if a filter was provided, create a predicate for the request
+		if filter != nil || d == .latest {
+			
+			var predicate = ""
+			var filterArgs = [Any]()
+			if filter != nil {
+				filterArgs = filter!.components(separatedBy: ":")
+				
+				for (i, _) in filterArgs.enumerated() {
+					if predicate.count > 0 { predicate.append(" AND ")}
+					predicate.append("(\(levels[i])=%@)")
+				}
+			}
+			if d == .latest {
+				if predicate.count > 0 { predicate.append(" AND ")}
+				predicate.append("(date=%@)")
+				filterArgs.append(self.dataDate!)
+				if f == .daily {
+					print("WARNING: daily frequency is ignored when latest date is selected.  Response is a cumulative value.")
+				}
+			}
+	
+			req.predicate = NSPredicate(format: predicate, argumentArray: filterArgs)
+			
+		}
+		
+		// Define the groupby summarization function
+		let keyPathExp = NSExpression(forKeyPath: "value")
+		// supports: sum, count, min, max, and average plus other basic statistical functions
+		let expression = NSExpression(forFunction: "sum:", arguments: [keyPathExp])
+		let sumDesc = NSExpressionDescription()
+		sumDesc.expression = expression
+		sumDesc.name = "sum"
+		sumDesc.expressionResultType = .integer32AttributeType
+		
+		req.resultType = .dictionaryResultType // required for grouping
+//		if summarizationLevel != nil {
+			req.propertiesToGroupBy = levels + ["date"]
+//		}
+		req.propertiesToFetch = levels + ["date"] + [sumDesc]
+		
+		guard let results = try? persistentContainer.viewContext.fetch(req), results.count > 0 else {
+			return nil
+		}
+		
+		
+		
+		// results is a list of dictionaries iwth "date", "sum" and the summarization levels
+//		{
+//			date = "2020-01-22 05:00:00 +0000";
+//			sum = 0;
+//			"uid.admin2" = Autauga;
+//			"uid.country_region" = US;
+//			"uid.province_state" = Alabama;
+//		}
+		
+		// convert results into a tuple so they can be sorted by date
+		var rvTuple = [(area: String, date: Date, value: Int32)]()
+		(results as! [[String:Any]]).forEach({ record in
+			var area = ""
+			levels.forEach({ level in
+				if area.count > 0 { area.append(":")}
+				area.append(record[level] as! String)
+			})
+			
+			rvTuple.append((area: area, date: record["date"]! as! Date, value: record["sum"]! as! Int32))
+			
+		})
+		
+		rvTuple.sort(by: { ($0.area, $0.date) < ($1.area, $1.date)})
+		
+		
+		// create flat lists for areas, dates and values where the indexes match
+		var areas = [String]()
+		var dates = [Date]()
+		var values = [Int32]()
+		_ = rvTuple.map({ areas.append($0.area); dates.append($0.date); values.append($0.value)})
+		
+		// find the periodic values if the frequency is daily
+		if f == .daily {
+			var per_values = [Int32](repeating: 0, count: values.count)
+			var current_area = ""
+			for (i, a) in areas.enumerated() {
+				if a == current_area {
+					per_values[i] = values[i] - values[i-1]
+				} else {
+					current_area = a
+					per_values[i] = values[i]
+				}
+			}
+			values = per_values
+		}
+		
+		
+		return (areas, dates, values)
+	}
+	
+	
+	public func getCSV() -> [[String:String]] {
 		do {
-//			let csv:CSV = try CSV(url: self.url as URL)
-			let csv:CSV = try CSV(url: fileURL)
+			self.fileURL = try downloadCOVIDFile(scope: self.scope, dataType: self.dataType)
+			let csv:CSV = try CSV(url: self.fileURL)
 			return csv.namedRows
 		} catch {
 			print(error)
 			return [[:]]
 		}
+	}
+	
+	func loadData() {
+		
+		let moc = persistentContainer.viewContext
+		
+		do {
+			let rows = self.getCSV()
+			let numRows = rows.count
+			for (i, entry) in rows.enumerated() {
+				try loadCSVLine(line: entry, scope: scope, dataType: dataType, context: moc)
+				if i % 100 == 0 {
+					print("\(i):\(numRows)", terminator: "\r")
+				}
+			}
+			try! moc.save()
+		} catch {
+			print(error)
+		}
 		
 	}
 	
-	func downloadFile() {
-		do {
-			self.fileURL = try downloadCOVIDFile(scope: self.scope, dataType: self.dataType)
-		} catch {
-			print("Unable to download file:")
-			print(error.localizedDescription)
-		}
-	}
+	
+	
+//	func downloadFile() {
+//		do {
+//			self.fileURL = try downloadCOVIDFile(scope: self.scope, dataType: self.dataType)
+//		} catch {
+//			print("Unable to download file:")
+//			print(error.localizedDescription)
+//		}
+//	}
 
 }
 
@@ -321,22 +507,30 @@ func loadCSVLine(line: [String:String], scope s:Scope, dataType d:DataType, cont
 	loadDataEntry(dataEntry: dataEntry, dataType: d, uidRecord: uidRecord, context: moc)
 }
 
-public func loadData(scope s: Scope, dataType d: DataType, context moc: NSManagedObjectContext) {
+//public func loadData(scope s: Scope, dataType d: DataType) {
+//
+//	let covidData = COVIDData(scope: s, dataType: d)
+//	let moc = persistentContainer.viewContext
+//
+//	do {
+//		let rows = covidData.getCSV()
+//		let numRows = rows.count
+//		for (i, entry) in rows.enumerated() {
+//			try loadCSVLine(line: entry, scope: s, dataType: d, context: moc)
+//			if i % 100 == 0 {
+//				print("\(i):\(numRows)", terminator: "\r")
+//			}
+//		}
+//		try! moc.save()
+//	} catch {
+//		print(error)
+//	}
+//
+//}
+
+public func fetchLatestData(scope s:Scope, dataType d:DataType) -> Int32? {
 	
 	let covidData = COVIDData(scope: s, dataType: d)
-	
-	do {
-		let rows = covidData.getCSV()
-		let numRows = rows.count
-		for (i, entry) in rows.enumerated() {
-			try loadCSVLine(line: entry, scope: s, dataType: d, context: moc)
-			if i % 100 == 0 {
-				print("\(i):\(numRows)", terminator: "\r")
-			}
-		}
-		try! moc.save()
-	} catch {
-		print(error)
-	}
+	return covidData.latestData
 	
 }
